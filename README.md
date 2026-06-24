@@ -90,6 +90,17 @@ NEXT_PUBLIC_MULTIPLAYER_URL=http://localhost:8080
 - **Single player** — `/single` — play solo on your own
 - **Host** — `/host` — create a room and share the multiplayer URL with players
 
+## Scale branch (`feat/scale-300-players`)
+
+Optimized for large races (up to **300 players** on Render free tier):
+
+- **Event-driven progress** — clients report milestones only (collectible, maze done, finish) with timestamps
+- **Host-only leaderboard** — no progress fan-out to players
+- **Host sets room cap** — dashboard limit up to `MAX_PLAYERS` (default 300, server hard ceiling)
+- **Pre-warm** — hit `/health` on the multiplayer service before opening the room to many players
+
+Load-test in steps: 10 → 50 → 150 → 300 before a live event.
+
 ## Tech stack
 
 - Next.js 15 (App Router)

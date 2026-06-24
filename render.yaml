@@ -17,6 +17,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: MAX_PLAYERS
+        value: "300"
 
   # Next.js game (/, /single, /host) + runtime config API
   - type: web

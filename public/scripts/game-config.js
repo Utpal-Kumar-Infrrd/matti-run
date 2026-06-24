@@ -73,7 +73,6 @@ function selectSpreadCells(candidates, count, rng, anchor) {
 
 var MULTIPLAYER_SERVER_PORT = 8080;
 var MULTIPLAYER_SERVER_URL_OVERRIDE = null;
-var MULTIPLAYER_PROGRESS_INTERVAL_MS = 500;
 
 function getMultiplayerServerUrl() {
     if (typeof window !== 'undefined' && window.__MATTIE_RUN_MULTIPLAYER_URL__) {

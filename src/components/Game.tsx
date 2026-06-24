@@ -169,7 +169,7 @@ export default function Game({ mode }: GameProps) {
               Room: <strong id="lobby-room-code" />
             </p>
             <p>Waiting for host to start the race…</p>
-            <ul id="lobby-player-list" />
+            <p id="lobby-player-count" />
           </div>
         </div>
       </div>

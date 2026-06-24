@@ -531,7 +531,9 @@
                     updateCollectibleCounter();
                     if (collectedCount !== lastReportedCollectibles) {
                         lastReportedCollectibles = collectedCount;
-                        reportMultiplayerProgress(true);
+                        if (isMultiplayer) {
+                            Multiplayer.reportCollected(collectedCount);
+                        }
                     }
                     if (collectedCount === COLLECTIBLE_COUNT) {
                         openExitGate();
@@ -555,45 +557,6 @@
         }
 
 
-
-
-        function getMazeElapsedMs() {
-            if (!mazeStartTime) {
-                return 0;
-            }
-            var end = mazeEndTime || Date.now();
-            return Math.max(0, end - mazeStartTime);
-        }
-
-
-        function getPuzzleElapsedMs() {
-            var start = Puzzle.getPuzzleStartTime ? Puzzle.getPuzzleStartTime() : 0;
-            if (!start) {
-                return 0;
-            }
-            return Math.max(0, Date.now() - start);
-        }
-
-
-        function buildProgressState() {
-            var mazePassed = mazeComplete;
-            var puzzleSolved = gameState === 'end';
-            return {
-                collectedCount: collectedCount,
-                mazePassed: mazePassed,
-                puzzleSolved: puzzleSolved,
-                mazeMs: getMazeElapsedMs(),
-                puzzleMs: gameState === 'puzzle' || gameState === 'end' ? getPuzzleElapsedMs() : 0
-            };
-        }
-
-
-        function reportMultiplayerProgress(force) {
-            if (!isMultiplayer) {
-                return;
-            }
-            Multiplayer.reportProgress(buildProgressState(), force);
-        }
 
 
         function beginMultiplayerRace(startAt, seed) {
@@ -934,7 +897,6 @@
                     updateCollectibleMarkers();
                     updateExitMarker();
                     checkCollectibles();
-                    reportMultiplayerProgress(false);
                     renderer.render(scene, camera);
 
                     if (!shipGroup) {
@@ -946,7 +908,9 @@
                         if (collectedCount === COLLECTIBLE_COUNT && exitGateOpen) {
                             mazeEndTime = Date.now();
                             mazeComplete = true;
-                            reportMultiplayerProgress(true);
+                            if (isMultiplayer) {
+                                Multiplayer.reportMazeComplete(mazeEndTime - mazeStartTime);
+                            }
                             gameState = 'fade out';
                         }
                     }
@@ -986,7 +950,6 @@
                     break;
 
                 case 'puzzle':
-                    reportMultiplayerProgress(false);
                     break;
 
                 case 'end':
@@ -1088,18 +1051,14 @@
                 $('#lobby-error').hide();
                 $('#lobby-join-button').prop('disabled', true);
                 Multiplayer.connectAndJoin(code, name, {
-                    onJoined: function () {
+                    onJoined: function (data) {
                         multiplayerRoomJoined = true;
                         $('#lobby-join-form').hide();
                         $('#lobby-waiting').show();
                         $('#lobby-room-code').text(code);
-                    },
-                    onRoomUpdated: function (data) {
-                        var list = $('#lobby-player-list');
-                        list.empty();
-                        for (var i = 0; i < data.players.length; i++) {
-                            list.append('<li>' + data.players[i].name + '</li>');
-                        }
+                        var count = data.playerCount || 0;
+                        var limit = data.playerLimit || count;
+                        $('#lobby-player-count').text(count + ' / ' + limit + ' players in room');
                     },
                     onCountdown: function (data) {
                         $('#lobby-screen').hide();
