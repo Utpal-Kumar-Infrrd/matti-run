@@ -13,7 +13,7 @@
             shipRadius = 0.25,
             keyAxis = [0, 0],
             planeTexture = undefined,
-            wallTexture = THREE.ImageUtils.loadTexture('/assets/wall.png'),
+            wallTexture = THREE.ImageUtils.loadTexture(MAZE_WALL_TEXTURE_PATH),
             gameState = undefined,
             collectibles = [],
             collectedCount = 0,
@@ -809,7 +809,7 @@
 
             g = new THREE.PlaneGeometry(mazeDimension * 10, mazeDimension * 10, mazeDimension, mazeDimension);
             if (!planeTexture || !planeTexture.image || !planeTexture.image.complete) {
-                planeTexture = THREE.ImageUtils.loadTexture('/assets/space.jpg', undefined, function () {
+                planeTexture = THREE.ImageUtils.loadTexture(MAZE_FLOOR_TEXTURE_PATH, undefined, function () {
                     if (planeTexture) {
                         planeTexture.wrapS = planeTexture.wrapT = THREE.RepeatWrapping;
                         planeTexture.repeat.set(mazeDimension * 5, mazeDimension * 5);

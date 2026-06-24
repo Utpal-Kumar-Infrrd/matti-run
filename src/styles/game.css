@@ -289,6 +289,18 @@
             background: #555;
         }
 
+        #puzzle-screen {
+            background-color: #000;
+            background-image: url('/assets/space.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #puzzle-screen .screen-panel {
+            background-color: rgba(10, 10, 20, 0.88);
+        }
+
         #puzzle-grid {
             display: grid;
             gap: 4px;
