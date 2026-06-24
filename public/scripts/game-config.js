@@ -2,7 +2,7 @@ var MAZE_DIMENSION_LEVEL_2 = 25;
 var MAZE_SEED = 42;
 var PUZZLE_GRID_ROWS = 3;
 var PUZZLE_GRID_COLS = 4;
-var PUZZLE_IMAGE_PATH = '/assets/infrrd-matti.jpeg';
+var PUZZLE_IMAGE_PATH = '/assets/infrrd-mattie.jpeg';
 var COLLECTIBLE_COUNT = PUZZLE_GRID_ROWS * PUZZLE_GRID_COLS;
 var COLLECTIBLE_PIXEL_SCALE = 0.45;
 var COLLECTIBLE_PICKUP_SCALE = 1.1;
@@ -76,8 +76,8 @@ var MULTIPLAYER_SERVER_URL_OVERRIDE = null;
 var MULTIPLAYER_PROGRESS_INTERVAL_MS = 500;
 
 function getMultiplayerServerUrl() {
-    if (typeof window !== 'undefined' && window.__MATTI_RUN_MULTIPLAYER_URL__) {
-        return window.__MATTI_RUN_MULTIPLAYER_URL__;
+    if (typeof window !== 'undefined' && window.__MATTIE_RUN_MULTIPLAYER_URL__) {
+        return window.__MATTIE_RUN_MULTIPLAYER_URL__;
     }
     if (typeof window !== 'undefined' && window.location.hostname) {
         var protocol = window.location.protocol || 'http:';

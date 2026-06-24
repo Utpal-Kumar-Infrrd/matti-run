@@ -1,4 +1,4 @@
-# matti-run
+# mattie-run
 
 A WebGL maze game built with Next.js, Three.js, and Box2dWeb. Pilot your ship through the maze, collect puzzle pieces, and solve the sliding puzzle to win.
 
@@ -12,8 +12,8 @@ Deploy the game and multiplayer server together with one [Render Blueprint](http
 2. Open [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
 3. Connect repo `Utpal-Kumar-Infrrd/matti-run` and select branch **`deploy/render`**
 4. Click **Apply** — Render creates two services:
-   - **`matti-run`** — Next.js game + host dashboard
-   - **`matti-run-multiplayer`** — Socket.io backend
+   - **`mattie-run`** — Next.js game + host dashboard
+   - **`mattie-run-multiplayer`** — Socket.io backend
 5. Wait for both deploys to finish (first build ~5–10 min)
 
 `NEXT_PUBLIC_MULTIPLAYER_URL` and `MULTIPLAYER_SERVER_URL` are wired automatically from the multiplayer service URL.
@@ -22,10 +22,10 @@ Deploy the game and multiplayer server together with one [Render Blueprint](http
 
 | Role | URL |
 |------|-----|
-| **Players (multiplayer)** | `https://matti-run.onrender.com` |
-| **Single player** | `https://matti-run.onrender.com/single` |
-| **Host** | `https://matti-run.onrender.com/host` |
-| **Health check** | `https://matti-run-multiplayer.onrender.com/health` |
+| **Players (multiplayer)** | `https://mattie-run.onrender.com` |
+| **Single player** | `https://mattie-run.onrender.com/single` |
+| **Host** | `https://mattie-run.onrender.com/host` |
+| **Health check** | `https://mattie-run-multiplayer.onrender.com/health` |
 
 Service names may differ slightly if Render suffixes them; check your dashboard.
 

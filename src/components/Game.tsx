@@ -70,7 +70,7 @@ export default function Game({ mode }: GameProps) {
       if (cancelled) {
         return;
       }
-      window.__MATTI_RUN_MULTIPLAYER_URL__ = url;
+      window.__MATTIE_RUN_MULTIPLAYER_URL__ = url;
 
       for (const src of GAME_SCRIPTS_BASE) {
         if (cancelled) {

@@ -999,7 +999,7 @@
                 $('#intro-screen').hide();
                 $('#lobby-screen').css('display', 'flex');
                 gameState = 'lobby';
-                var saved = localStorage.getItem('mattiRunPlayerName');
+                var saved = localStorage.getItem('mattieRunPlayerName');
                 if (saved) {
                     $('#player-name-input').val(saved);
                 }
@@ -1023,7 +1023,7 @@
                     $('#lobby-error').text('Enter the room code.').show();
                     return;
                 }
-                localStorage.setItem('mattiRunPlayerName', name);
+                localStorage.setItem('mattieRunPlayerName', name);
                 $('#lobby-error').hide();
                 $('#lobby-join-button').prop('disabled', true);
                 Multiplayer.connectAndJoin(code, name, {
