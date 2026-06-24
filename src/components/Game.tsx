@@ -209,6 +209,34 @@ export default function Game({ mode }: GameProps) {
           <button id="play-again-button" className="game-button" type="button">
             Play Again
           </button>
+          <button id="quit-room-button" className="game-button quit-room-button" type="button" style={{ display: "none" }}>
+            Quit Room
+          </button>
+        </div>
+      </div>
+
+      <div id="exit-warning-screen" className="screen-overlay exit-warning-overlay" style={{ display: "none" }}>
+        <div className="screen-panel exit-warning-panel">
+          <div className="exit-warning-icon" aria-hidden="true">
+            ⚠
+          </div>
+          <h1>Leave this room?</h1>
+          <p className="exit-warning-lead">
+            You are in an active multiplayer session.
+          </p>
+          <p className="exit-warning-text">
+            If you leave now, the <strong>host will lose all race progress</strong> for everyone in this
+            room — including times, collectibles, and leaderboard standings.
+          </p>
+          <p className="exit-warning-sub">This cannot be undone.</p>
+          <div className="exit-warning-actions">
+            <button id="exit-warning-cancel" className="game-button secondary" type="button">
+              Stay in room
+            </button>
+            <button id="exit-warning-confirm" className="game-button exit-warning-confirm-btn" type="button">
+              Leave anyway
+            </button>
+          </div>
         </div>
       </div>
 

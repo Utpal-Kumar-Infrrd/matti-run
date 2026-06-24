@@ -42,7 +42,10 @@
             wBall = undefined,
 
             isMultiplayer = false,
-            lastReportedCollectibles = -1;
+            lastReportedCollectibles = -1,
+            multiplayerRoomJoined = false,
+            pendingExitCallback = null,
+            exitWarningVisible = false;
 
 
         function getExitCellX() {
@@ -66,6 +69,82 @@
             if (request) {
                 request.call(el).catch(function () { });
             }
+        }
+
+
+        function isInMultiplayerSession() {
+            return !!(multiplayerRoomJoined || isMultiplayer || Multiplayer.isActive());
+        }
+
+
+        function updateEndScreenButtons() {
+            if (isMultiplayer) {
+                $('#play-again-button').hide();
+                $('#quit-room-button').show();
+            } else {
+                $('#play-again-button').show();
+                $('#quit-room-button').hide();
+            }
+        }
+
+
+        function showExitWarning(onConfirm) {
+            exitWarningVisible = true;
+            pendingExitCallback = onConfirm;
+            $('#exit-warning-screen').css('display', 'flex');
+        }
+
+
+        function hideExitWarning() {
+            exitWarningVisible = false;
+            pendingExitCallback = null;
+            $('#exit-warning-screen').hide();
+        }
+
+
+        function requestMultiplayerExit() {
+            if (!isInMultiplayerSession()) {
+                return;
+            }
+            showExitWarning(quitMultiplayerRoom);
+        }
+
+
+        function quitMultiplayerRoom() {
+            Puzzle.reset();
+            Joystick.hide();
+            $('#end-screen').hide();
+            $('#countdown-screen').hide();
+            $('#puzzle-screen').hide();
+            $('#lobby-screen').hide();
+            $('#lobby-error').hide();
+            $('#lobby-join-form').show();
+            $('#lobby-waiting').hide();
+            $('#lobby-join-button').prop('disabled', false);
+            Multiplayer.disconnect();
+            isMultiplayer = false;
+            multiplayerRoomJoined = false;
+            $('#collectible-counter').hide();
+            $('#collectible-markers').hide().empty();
+            $('#collect-effects').empty();
+            $('#ship-marker').hide();
+            $('#ship-shadow').hide();
+            $('#ship-engine-glow').hide();
+            $('#exit-hint').hide().removeClass('exit-hint--success');
+            $('#exit-marker').hide();
+            $('#help').show();
+            if (renderer && renderer.domElement) {
+                renderer.domElement.style.display = 'block';
+            }
+            collectedCount = 0;
+            collectibles = [];
+            mazeComplete = false;
+            mazeStartTime = 0;
+            mazeEndTime = 0;
+            lastReportedCollectibles = -1;
+            updateEndScreenButtons();
+            $('#intro-screen').show();
+            gameState = 'intro';
         }
 
 
@@ -471,6 +550,7 @@
             if (isMultiplayer) {
                 Multiplayer.reportFinish(mazeElapsed, puzzleElapsed);
             }
+            updateEndScreenButtons();
             $('#end-screen').show();
         }
 
@@ -547,36 +627,14 @@
         }
 
         function resetGame() {
+            if (isInMultiplayerSession()) {
+                requestMultiplayerExit();
+                return;
+            }
             Puzzle.reset();
             Joystick.hide();
             $('#end-screen').hide();
             $('#countdown-screen').hide();
-            if (isMultiplayer) {
-                Multiplayer.disconnect();
-                isMultiplayer = false;
-                $('#collectible-counter').hide();
-                $('#collectible-markers').hide().empty();
-                $('#collect-effects').empty();
-                $('#ship-marker').hide();
-                $('#ship-shadow').hide();
-                $('#ship-engine-glow').hide();
-                $('#exit-hint').hide().removeClass('exit-hint--success');
-                $('#exit-marker').hide();
-                $('#help').show();
-                    renderer.domElement.style.display = 'block';
-                collectedCount = 0;
-                collectibles = [];
-                mazeComplete = false;
-                mazeStartTime = 0;
-                mazeEndTime = 0;
-                lastReportedCollectibles = -1;
-                $('#lobby-join-form').show();
-                $('#lobby-waiting').hide();
-                $('#lobby-join-button').prop('disabled', false);
-                $('#lobby-screen').css('display', 'flex');
-                gameState = 'lobby';
-                return;
-            }
             $('#intro-screen').show();
             $('#lobby-screen').hide();
             $('#collectible-markers').hide().empty();
@@ -594,6 +652,7 @@
             mazeStartTime = 0;
             mazeEndTime = 0;
             lastReportedCollectibles = -1;
+            updateEndScreenButtons();
             gameState = 'intro';
         }
 
@@ -1005,8 +1064,10 @@
                 }
             });
             $('#lobby-back-button').on('click', function () {
-                Multiplayer.disconnect();
-                isMultiplayer = false;
+                if (isInMultiplayerSession()) {
+                    requestMultiplayerExit();
+                    return;
+                }
                 $('#lobby-screen').hide();
                 $('#lobby-error').hide();
                 $('#intro-screen').show();
@@ -1028,6 +1089,7 @@
                 $('#lobby-join-button').prop('disabled', true);
                 Multiplayer.connectAndJoin(code, name, {
                     onJoined: function () {
+                        multiplayerRoomJoined = true;
                         $('#lobby-join-form').hide();
                         $('#lobby-waiting').show();
                         $('#lobby-room-code').text(code);
@@ -1046,17 +1108,46 @@
                     onError: function (msg) {
                         $('#lobby-error').text(msg).show();
                         $('#lobby-join-button').prop('disabled', false);
+                        multiplayerRoomJoined = false;
                     }
                 });
             });
             $('#play-again-button').on('click', resetGame);
+            $('#quit-room-button').on('click', requestMultiplayerExit);
+            $('#exit-warning-cancel').on('click', hideExitWarning);
+            $('#exit-warning-confirm').on('click', function () {
+                var callback = pendingExitCallback;
+                hideExitWarning();
+                if (callback) {
+                    callback();
+                }
+            });
+
+            $(window).on('beforeunload', function (e) {
+                if (isInMultiplayerSession() && !exitWarningVisible) {
+                    var message = 'Leaving will reset host progress for this room.';
+                    e.preventDefault();
+                    e.returnValue = message;
+                    return message;
+                }
+            });
 
             var gameMode = (typeof window !== 'undefined' && window.__MATTIE_RUN_GAME_MODE__) || 'multiplayer';
-            if (gameMode === 'single') {
+            if (gameMode === 'multiplayer') {
+                history.pushState({ mattieRunRoom: true }, '', window.location.href);
+                window.addEventListener('popstate', function () {
+                    if (isInMultiplayerSession()) {
+                        history.pushState({ mattieRunRoom: true }, '', window.location.href);
+                        requestMultiplayerExit();
+                    }
+                });
                 $('#join-race-button').hide();
             } else {
                 $('#start-button').hide();
             }
+
+            $('#exit-warning-screen').hide();
+            updateEndScreenButtons();
 
             $('#collectible-counter').hide();
             $('#collectible-markers').hide();
