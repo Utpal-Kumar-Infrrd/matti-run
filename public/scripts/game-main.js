@@ -77,6 +77,42 @@
         }
 
 
+        function getUrlRoomCode() {
+            if (typeof window === 'undefined') {
+                return '';
+            }
+            var params = new URLSearchParams(window.location.search);
+            var code = (params.get('code') || params.get('room') || '').toUpperCase().trim();
+            return /^[A-Z0-9]{6}$/.test(code) ? code : '';
+        }
+
+
+        function openLobbyWithPrefill(prefilledCode) {
+            $('#intro-screen').hide();
+            $('#lobby-screen').css('display', 'flex');
+            $('#lobby-error').hide();
+            gameState = 'lobby';
+
+            if (prefilledCode) {
+                $('#room-code-input').val(prefilledCode);
+                $('#lobby-prefill-code').text(prefilledCode);
+                $('#room-code-row').hide();
+                $('#lobby-room-prefill').show();
+            } else {
+                $('#room-code-row').show();
+                $('#lobby-room-prefill').hide();
+            }
+
+            var saved = localStorage.getItem('mattieRunPlayerName');
+            if (saved) {
+                $('#player-name-input').val(saved);
+            }
+            setTimeout(function () {
+                $('#player-name-input').trigger('focus');
+            }, 100);
+        }
+
+
         function updateEndScreenButtons() {
             if (isMultiplayer) {
                 $('#play-again-button').hide();
@@ -1018,13 +1054,7 @@
 
             $('#start-button').on('click', startSinglePlayerGame);
             $('#join-race-button').on('click', function () {
-                $('#intro-screen').hide();
-                $('#lobby-screen').css('display', 'flex');
-                gameState = 'lobby';
-                var saved = localStorage.getItem('mattieRunPlayerName');
-                if (saved) {
-                    $('#player-name-input').val(saved);
-                }
+                openLobbyWithPrefill(getUrlRoomCode());
             });
             $('#lobby-back-button').on('click', function () {
                 if (isInMultiplayerSession()) {
@@ -1109,6 +1139,11 @@
 
             $('#exit-warning-screen').hide();
             updateEndScreenButtons();
+
+            var prefilledRoomCode = getUrlRoomCode();
+            if (gameMode === 'multiplayer' && prefilledRoomCode) {
+                openLobbyWithPrefill(prefilledRoomCode);
+            }
 
             $('#collectible-counter').hide();
             $('#collectible-markers').hide();

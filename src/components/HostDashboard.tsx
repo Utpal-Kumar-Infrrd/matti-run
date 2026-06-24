@@ -78,6 +78,12 @@ export default function HostDashboard() {
   const [maxPlayersHard, setMaxPlayersHard] = useState(300);
   const [leaderboardPage, setLeaderboardPage] = useState(0);
   const [raceStartAt, setRaceStartAt] = useState(0);
+  const [qrFullscreen, setQrFullscreen] = useState(false);
+
+  const playerJoinUrl =
+    shareOrigin && roomReady && roomCode !== "------"
+      ? `${shareOrigin}/?code=${roomCode}`
+      : shareOrigin;
 
   const setPlayerLimitOnServer = useCallback((limit: number) => {
     if (limitDebounceRef.current) {
@@ -87,6 +93,19 @@ export default function HostDashboard() {
       socketRef.current?.emit("room:set_player_limit", { limit });
     }, 300);
   }, []);
+
+  useEffect(() => {
+    if (!qrFullscreen) {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setQrFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [qrFullscreen]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -238,13 +257,20 @@ export default function HostDashboard() {
         <aside className="host-sidebar">
           <section className="host-card">
             <h2>Player URL</h2>
-            <p className="host-hint">Players open this URL and tap Join Game.</p>
-            <div className="host-share-url">{shareOrigin || "…"}</div>
-            {shareOrigin && (
-              <div className="host-qr-wrap">
-                <p className="host-hint">Scan to join</p>
-                <QRCodeSVG value={shareOrigin} size={160} level="M" includeMargin />
-              </div>
+            <p className="host-hint">
+              QR includes the room code — players only enter their name after scanning.
+            </p>
+            <div className="host-share-url">{playerJoinUrl || "…"}</div>
+            {playerJoinUrl && roomReady && (
+              <button
+                type="button"
+                className="host-qr-wrap"
+                onClick={() => setQrFullscreen(true)}
+                aria-label="Enlarge QR code to full screen"
+              >
+                <p className="host-hint">Tap to enlarge</p>
+                <QRCodeSVG value={playerJoinUrl} size={160} level="M" includeMargin />
+              </button>
             )}
           </section>
 
@@ -391,6 +417,21 @@ export default function HostDashboard() {
           </div>
         </section>
       </div>
+
+      {qrFullscreen && playerJoinUrl && (
+        <button
+          type="button"
+          className="host-qr-fullscreen"
+          onClick={() => setQrFullscreen(false)}
+          aria-label="Close full screen QR code"
+        >
+          <div className="host-qr-fullscreen-inner">
+            <QRCodeSVG value={playerJoinUrl} size={512} level="M" includeMargin />
+            <p className="host-qr-fullscreen-room">{roomCode}</p>
+            <p className="host-hint">Tap anywhere to close</p>
+          </div>
+        </button>
+      )}
     </div>
   );
 }

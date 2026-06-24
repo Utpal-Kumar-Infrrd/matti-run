@@ -192,6 +192,57 @@
   background: #fff;
   border-radius: 8px;
   text-align: center;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.host-qr-wrap:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 16px rgba(255, 255, 0, 0.35);
+}
+
+.host-qr-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.95);
+  border: none;
+  padding: 24px;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.host-qr-fullscreen-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.host-qr-fullscreen-inner svg {
+  width: min(90vmin, 512px) !important;
+  height: min(90vmin, 512px) !important;
+}
+
+.host-qr-fullscreen-room {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  letter-spacing: 0.25em;
+  color: #ff0;
+  font-weight: bold;
+  margin: 0;
+}
+
+.host-qr-fullscreen .host-hint {
+  color: #aaa;
+  margin: 0;
 }
 
 .host-qr-wrap .host-hint {

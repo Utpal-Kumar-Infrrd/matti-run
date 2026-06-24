@@ -523,6 +523,16 @@
             display: none;
         }
 
+        #lobby-room-prefill {
+            margin: 12px 0 4px;
+            font-size: 16px;
+        }
+
+        #lobby-room-prefill strong {
+            color: #ff0;
+            letter-spacing: 0.15em;
+        }
+
         #lobby-waiting {
             display: none;
         }

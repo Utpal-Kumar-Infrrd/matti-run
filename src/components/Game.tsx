@@ -148,14 +148,21 @@ export default function Game({ mode }: GameProps) {
           <div id="lobby-join-form" className="lobby-form">
             <label htmlFor="player-name-input">Your name</label>
             <input id="player-name-input" type="text" maxLength={24} placeholder="Player name" />
-            <label htmlFor="room-code-input">Room code</label>
-            <input
-              id="room-code-input"
-              type="text"
-              maxLength={6}
-              placeholder="6-letter code"
-              autoCapitalize="characters"
-            />
+            <div id="lobby-room-prefill" style={{ display: "none" }}>
+              <p>
+                Room: <strong id="lobby-prefill-code" />
+              </p>
+            </div>
+            <div id="room-code-row">
+              <label htmlFor="room-code-input">Room code</label>
+              <input
+                id="room-code-input"
+                type="text"
+                maxLength={6}
+                placeholder="6-letter code"
+                autoCapitalize="characters"
+              />
+            </div>
             <p id="lobby-error" />
             <button id="lobby-join-button" className="game-button" type="button">
               Join
