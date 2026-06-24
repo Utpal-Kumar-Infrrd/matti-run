@@ -1100,9 +1100,11 @@
                         requestMultiplayerExit();
                     }
                 });
-                $('#join-race-button').hide();
-            } else {
                 $('#start-button').hide();
+                $('#join-race-button').show();
+            } else {
+                $('#join-race-button').hide();
+                $('#start-button').show();
             }
 
             $('#exit-warning-screen').hide();

@@ -65,7 +65,6 @@ async function resolveMultiplayerUrl(): Promise<string> {
 export default function HostDashboard() {
   const socketRef = useRef<ReturnType<typeof import("socket.io-client").io> | null>(null);
   const limitDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const raceStartAtRef = useRef(0);
 
   const [status, setStatus] = useState({ text: "Connecting…", cls: "" });
   const [roomCode, setRoomCode] = useState("------");
@@ -78,6 +77,7 @@ export default function HostDashboard() {
   const [playerLimit, setPlayerLimit] = useState(300);
   const [maxPlayersHard, setMaxPlayersHard] = useState(300);
   const [leaderboardPage, setLeaderboardPage] = useState(0);
+  const [raceStartAt, setRaceStartAt] = useState(0);
 
   const setPlayerLimitOnServer = useCallback((limit: number) => {
     if (limitDebounceRef.current) {
@@ -169,7 +169,7 @@ export default function HostDashboard() {
           setLeaderboard(data.rows);
           setLeaderboardPage(0);
           if (data.raceStartAt) {
-            raceStartAtRef.current = data.raceStartAt;
+            setRaceStartAt(data.raceStartAt);
           }
         },
       );
@@ -177,7 +177,7 @@ export default function HostDashboard() {
       sock.on("race:finished", (data: { rows: LeaderboardRow[]; raceStartAt?: number }) => {
         setLeaderboard(data.rows);
         if (data.raceStartAt) {
-          raceStartAtRef.current = data.raceStartAt;
+          setRaceStartAt(data.raceStartAt);
         }
         setStatus({ text: "Race finished!", cls: "connected" });
       });
@@ -204,7 +204,7 @@ export default function HostDashboard() {
   const resetRace = () => {
     socketRef.current?.emit("race:reset");
     setRaceStarted(false);
-    raceStartAtRef.current = 0;
+    setRaceStartAt(0);
     setStatus({ text: "Race reset. Waiting for players.", cls: "connected" });
   };
 
@@ -223,151 +223,174 @@ export default function HostDashboard() {
     leaderboardPage * PAGE_SIZE,
     leaderboardPage * PAGE_SIZE + PAGE_SIZE,
   );
-  const raceStartAt = raceStartAtRef.current;
 
   return (
     <div className="host-panel">
-      <h1>Mattie Run Host Dashboard</h1>
-      <p className="host-hint">
-        You are the host. Share the player URL and room code — you do not play in the race.
-      </p>
-      <p className={`host-status ${status.cls}`}>{status.text}</p>
+      <header className="host-header">
+        <h1>Mattie Run Host Dashboard</h1>
+        <p className="host-hint">
+          Share the player URL and room code. You do not play in the race.
+        </p>
+        <p className={`host-status ${status.cls}`}>{status.text}</p>
+      </header>
 
-      <div>
-        <h2>Player URL</h2>
-        <p className="host-hint">Players open this URL and tap Join Game to enter your room code.</p>
-        <div className="host-share-url">{shareOrigin || "…"}</div>
-        {shareOrigin && (
-          <div className="host-qr-wrap">
-            <p className="host-hint">Scan to join</p>
-            <QRCodeSVG value={shareOrigin} size={180} level="M" includeMargin />
-          </div>
-        )}
-      </div>
-
-      {roomReady && (
-        <div>
-          <p>Room code:</p>
-          <div className="host-room-code">{roomCode}</div>
-          <p className="host-hint">Players enter this room code after opening the game URL above.</p>
-
-          <h2>Room capacity</h2>
-          <p className="host-hint">
-            Players joined: <strong>{players.length}</strong> / <strong>{playerLimit}</strong> (server
-            max {maxPlayersHard})
-          </p>
-          <div className="host-limit-controls">
-            <label htmlFor="player-limit-input">Max players</label>
-            <input
-              id="player-limit-input"
-              type="number"
-              min={Math.max(1, players.length)}
-              max={maxPlayersHard}
-              value={playerLimit}
-              disabled={raceStarted}
-              onChange={(e) => handleLimitChange(parseInt(e.target.value, 10) || playerLimit)}
-            />
-            <div className="host-limit-presets">
-              {LIMIT_PRESETS.filter((n) => n <= maxPlayersHard).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className="host-limit-preset"
-                  disabled={raceStarted || n < players.length}
-                  onClick={() => handleLimitChange(n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <h2>Players</h2>
-          <ul>
-            {players.length === 0 ? (
-              <li>Waiting for players…</li>
-            ) : (
-              <>
-                {lobbyPreview.map((p) => (
-                  <li key={p.id}>{p.name}</li>
-                ))}
-                {lobbyOverflow > 0 && <li>…and {lobbyOverflow} more</li>}
-              </>
+      <div className="host-layout">
+        <aside className="host-sidebar">
+          <section className="host-card">
+            <h2>Player URL</h2>
+            <p className="host-hint">Players open this URL and tap Join Game.</p>
+            <div className="host-share-url">{shareOrigin || "…"}</div>
+            {shareOrigin && (
+              <div className="host-qr-wrap">
+                <p className="host-hint">Scan to join</p>
+                <QRCodeSVG value={shareOrigin} size={160} level="M" includeMargin />
+              </div>
             )}
-          </ul>
-          <button type="button" onClick={startRace} disabled={raceStarted || players.length === 0}>
-            Start Race ({players.length}/{playerLimit})
-          </button>
-          <button type="button" onClick={resetRace} disabled={!raceStarted}>
-            New Race
-          </button>
-        </div>
-      )}
+          </section>
 
-      <h2>Leaderboard</h2>
-      {leaderboard.length > PAGE_SIZE && (
-        <div className="host-pagination">
-          <button
-            type="button"
-            disabled={leaderboardPage <= 0}
-            onClick={() => setLeaderboardPage((p) => p - 1)}
-          >
-            Previous
-          </button>
-          <span>
-            Page {leaderboardPage + 1} of {totalLeaderboardPages}
-          </span>
-          <button
-            type="button"
-            disabled={leaderboardPage >= totalLeaderboardPages - 1}
-            onClick={() => setLeaderboardPage((p) => p + 1)}
-          >
-            Next
-          </button>
-        </div>
-      )}
-      <table>
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Collectibles</th>
-            <th>Last pick</th>
-            <th>Maze</th>
-            <th>Maze done</th>
-            <th>Puzzle</th>
-            <th>Finished</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageRows.length === 0 ? (
-            <tr>
-              <td colSpan={9}>No players yet</td>
-            </tr>
-          ) : (
-            pageRows.map((row) => (
-              <tr key={row.id}>
-                <td>{row.rank}</td>
-                <td>{row.name}</td>
-                <td>{row.collectedCount}/12</td>
-                <td>{formatMilestoneAt(row.lastCollectedAt, raceStartAt)}</td>
-                <td>{row.mazePassed ? "Done" : "—"}</td>
-                <td>{formatMilestoneAt(row.mazeCompletedAt, raceStartAt)}</td>
-                <td>{row.puzzleSolved ? "Done" : "—"}</td>
-                <td>{formatMilestoneAt(row.puzzleCompletedAt, raceStartAt)}</td>
-                <td>
-                  {row.puzzleSolved
-                    ? formatTime(row.totalMs)
-                    : row.mazePassed
-                      ? formatTime(row.mazeMs)
-                      : "—"}
-                </td>
-              </tr>
-            ))
+          {roomReady && (
+            <section className="host-card">
+              <h2>Room</h2>
+              <p className="host-hint">Room code for players:</p>
+              <div className="host-room-code">{roomCode}</div>
+
+              <h3>Capacity</h3>
+              <p className="host-hint">
+                Joined: <strong>{players.length}</strong> / <strong>{playerLimit}</strong> (max{" "}
+                {maxPlayersHard})
+              </p>
+              <div className="host-limit-controls">
+                <label htmlFor="player-limit-input">Max players</label>
+                <input
+                  id="player-limit-input"
+                  type="number"
+                  min={Math.max(1, players.length)}
+                  max={maxPlayersHard}
+                  value={playerLimit}
+                  disabled={raceStarted}
+                  onChange={(e) => handleLimitChange(parseInt(e.target.value, 10) || playerLimit)}
+                />
+                <div className="host-limit-presets">
+                  {LIMIT_PRESETS.filter((n) => n <= maxPlayersHard).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className="host-limit-preset"
+                      disabled={raceStarted || n < players.length}
+                      onClick={() => handleLimitChange(n)}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <h3>Players</h3>
+              <ul className="host-player-list">
+                {players.length === 0 ? (
+                  <li>Waiting for players…</li>
+                ) : (
+                  <>
+                    {lobbyPreview.map((p) => (
+                      <li key={p.id}>{p.name}</li>
+                    ))}
+                    {lobbyOverflow > 0 && <li>…and {lobbyOverflow} more</li>}
+                  </>
+                )}
+              </ul>
+
+              <div className="host-actions">
+                <button
+                  type="button"
+                  onClick={startRace}
+                  disabled={raceStarted || players.length === 0}
+                >
+                  Start Race ({players.length}/{playerLimit})
+                </button>
+                <button type="button" onClick={resetRace} disabled={!raceStarted}>
+                  New Race
+                </button>
+              </div>
+            </section>
           )}
-        </tbody>
-      </table>
+        </aside>
+
+        <section className="host-leaderboard-section host-card">
+          <div className="host-leaderboard-header">
+            <h2>Leaderboard</h2>
+            {leaderboard.length > 0 && (
+              <span className="host-hint">{leaderboard.length} players</span>
+            )}
+          </div>
+
+          {leaderboard.length > PAGE_SIZE && (
+            <div className="host-pagination">
+              <button
+                type="button"
+                disabled={leaderboardPage <= 0}
+                onClick={() => setLeaderboardPage((p) => p - 1)}
+              >
+                Previous
+              </button>
+              <span>
+                Page {leaderboardPage + 1} of {totalLeaderboardPages}
+              </span>
+              <button
+                type="button"
+                disabled={leaderboardPage >= totalLeaderboardPages - 1}
+                onClick={() => setLeaderboardPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          <div className="host-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Player</th>
+                  <th>Pieces</th>
+                  <th>Last pick</th>
+                  <th>Maze</th>
+                  <th>Maze @</th>
+                  <th>Puzzle</th>
+                  <th>Done @</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={9}>No players yet — waiting for joins</td>
+                  </tr>
+                ) : (
+                  pageRows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{row.rank}</td>
+                      <td>{row.name}</td>
+                      <td>{row.collectedCount}/12</td>
+                      <td>{formatMilestoneAt(row.lastCollectedAt, raceStartAt)}</td>
+                      <td>{row.mazePassed ? "Done" : "—"}</td>
+                      <td>{formatMilestoneAt(row.mazeCompletedAt, raceStartAt)}</td>
+                      <td>{row.puzzleSolved ? "Done" : "—"}</td>
+                      <td>{formatMilestoneAt(row.puzzleCompletedAt, raceStartAt)}</td>
+                      <td>
+                        {row.puzzleSolved
+                          ? formatTime(row.totalMs)
+                          : row.mazePassed
+                            ? formatTime(row.mazeMs)
+                            : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

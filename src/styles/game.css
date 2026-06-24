@@ -191,6 +191,17 @@
             background-color: rgba(0, 0, 0, 0.9);
             z-index: 100;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #intro-screen.screen-overlay {
+            align-items: flex-start;
+            padding-top: max(24px, env(safe-area-inset-top));
+        }
+
+        #intro-screen .game-button {
+            display: inline-block;
+            min-width: 180px;
         }
 
         .screen-panel {

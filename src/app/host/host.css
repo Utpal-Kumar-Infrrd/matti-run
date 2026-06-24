@@ -1,34 +1,99 @@
 .host-page {
   min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #111;
   color: #fff;
-  padding: 24px;
+  padding: 16px 20px 48px;
   font-family: system-ui, sans-serif;
 }
 
 .host-panel {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 1600px;
   margin: 0 auto;
   background: #1a1a1a;
   border: 2px solid #fff;
-  padding: 24px;
+  padding: 20px 24px 32px;
+}
+
+.host-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #333;
 }
 
 .host-panel h1 {
   margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.host-panel h2 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  color: #ff0;
+}
+
+.host-panel h3 {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+  color: #ccc;
+}
+
+.host-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .host-layout {
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+}
+
+.host-card {
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.host-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.host-leaderboard-section {
+  min-width: 0;
+}
+
+.host-leaderboard-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.host-leaderboard-header h2 {
+  margin: 0;
 }
 
 .host-room-code {
-  font-size: 2.5rem;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   letter-spacing: 0.2em;
   color: #ff0;
   font-weight: bold;
-  margin: 16px 0;
+  margin: 8px 0 12px;
 }
 
 .host-status {
   color: #aaa;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .host-status.connected {
@@ -43,8 +108,8 @@
   background: #333;
   color: #fff;
   border: 2px solid #fff;
-  padding: 12px 24px;
-  font-size: 16px;
+  padding: 10px 18px;
+  font-size: 15px;
   cursor: pointer;
   margin-right: 8px;
   margin-top: 8px;
@@ -59,28 +124,52 @@
   cursor: not-allowed;
 }
 
-.host-panel ul {
+.host-player-list {
   text-align: left;
   padding-left: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0 0 8px;
+}
+
+.host-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.host-actions button {
+  margin: 0;
+}
+
+.host-table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
 }
 
 .host-panel table {
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
-  margin-top: 16px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .host-panel th,
 .host-panel td {
   border: 1px solid #444;
-  padding: 8px;
+  padding: 8px 10px;
   text-align: left;
+  white-space: nowrap;
 }
 
 .host-panel th {
   background: #222;
   color: #ff0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .host-hint {
@@ -91,14 +180,14 @@
 
 .host-share-url {
   color: #ff0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   word-break: break-all;
   margin: 8px 0;
 }
 
 .host-qr-wrap {
   display: inline-block;
-  margin: 16px 0;
+  margin: 12px 0 0;
   padding: 12px;
   background: #fff;
   border-radius: 8px;
@@ -111,7 +200,7 @@
 }
 
 .host-limit-controls {
-  margin: 12px 0 20px;
+  margin: 8px 0 4px;
 }
 
 .host-limit-controls label {
@@ -125,6 +214,9 @@
   padding: 8px;
   font-size: 16px;
   margin-bottom: 8px;
+  background: #222;
+  color: #fff;
+  border: 1px solid #555;
 }
 
 .host-limit-presets {
@@ -135,7 +227,7 @@
 
 .host-limit-preset {
   padding: 6px 12px !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   margin: 0 !important;
 }
 
@@ -143,7 +235,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 12px 0;
+  margin: 0 0 12px;
+  flex-wrap: wrap;
 }
 
 .host-pagination button {
