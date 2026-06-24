@@ -2,8 +2,6 @@
 
 var express = require('express');
 var http = require('http');
-var os = require('os');
-var path = require('path');
 var { Server } = require('socket.io');
 
 var PORT = process.env.PORT || 8080;
@@ -229,59 +227,9 @@ function isSocketConnected(socketId) {
     return Boolean(socketId && io.sockets.sockets.has(socketId));
 }
 
-function getLanAddresses() {
-    var nets = os.networkInterfaces();
-    var addresses = [];
-    var name;
-
-    for (name in nets) {
-        if (!Object.prototype.hasOwnProperty.call(nets, name)) {
-            continue;
-        }
-        var netList = nets[name];
-        for (var i = 0; i < netList.length; i++) {
-            var net = netList[i];
-            if (net.family === 'IPv4' && !net.internal) {
-                addresses.push(net.address);
-            }
-        }
-    }
-
-    return addresses;
-}
-
-function getLanGameUrls() {
-    return getLanAddresses().map(function (ip) {
-        return 'http://' + ip + ':' + PORT;
-    });
-}
-
-app.get('/host', function (req, res) {
-    res.sendFile(path.join(__dirname, 'host.html'));
-});
-
 app.get('/health', function (req, res) {
     res.json({ ok: true, room: room ? room.code : null });
 });
-
-app.get('/lan-urls', function (req, res) {
-    res.json({ urls: getLanGameUrls() });
-});
-
-var gameRoot = path.join(__dirname, '..');
-
-app.get('/', function (req, res) {
-    res.sendFile(path.join(gameRoot, 'index.html'));
-});
-
-app.use(function (req, res, next) {
-    if (req.path.indexOf('/server') === 0) {
-        return res.status(404).end();
-    }
-    next();
-});
-
-app.use(express.static(gameRoot, { index: 'index.html' }));
 
 io.on('connection', function (socket) {
     resetIdleTimer();
@@ -475,15 +423,6 @@ io.on('connection', function (socket) {
 });
 
 server.listen(PORT, function () {
-    var lanUrls = getLanGameUrls();
-    console.log('Mattie Run multiplayer server on http://localhost:' + PORT);
-    console.log('Host dashboard:             http://localhost:' + PORT + '/host');
-    if (lanUrls.length) {
-        console.log('Game (share with players):');
-        for (var i = 0; i < lanUrls.length; i++) {
-            console.log('  ' + lanUrls[i]);
-        }
-    } else {
-        console.log('Game (share with players):  http://localhost:' + PORT);
-    }
+    console.log('Mattie Run multiplayer server listening on port ' + PORT);
+    console.log('Health check: http://localhost:' + PORT + '/health');
 });

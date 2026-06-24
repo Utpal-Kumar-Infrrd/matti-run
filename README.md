@@ -16,7 +16,7 @@ Deploy the game and multiplayer server together with one [Render Blueprint](http
    - **`matti-run-multiplayer`** — Socket.io backend
 5. Wait for both deploys to finish (first build ~5–10 min)
 
-`NEXT_PUBLIC_MULTIPLAYER_URL` is wired automatically from the multiplayer service URL.
+`NEXT_PUBLIC_MULTIPLAYER_URL` and `MULTIPLAYER_SERVER_URL` are wired automatically from the multiplayer service URL.
 
 ### URLs after deploy
 
@@ -52,7 +52,7 @@ Service names may differ slightly if Render suffixes them; check your dashboard.
 |---------|--------|
 | Build | `npm install && npm run build` |
 | Start | `npm start` |
-| Env | `NEXT_PUBLIC_MULTIPLAYER_URL=https://YOUR-MULTIPLAYER.onrender.com` |
+| Env | `MULTIPLAYER_SERVER_URL=https://YOUR-MULTIPLAYER.onrender.com` (and optionally `NEXT_PUBLIC_MULTIPLAYER_URL` for build-time) |
 
 Redeploy the game service after setting the env var.
 
@@ -80,6 +80,7 @@ cd server && npm install && npm start
 Create `.env.local`:
 
 ```
+MULTIPLAYER_SERVER_URL=http://localhost:8080
 NEXT_PUBLIC_MULTIPLAYER_URL=http://localhost:8080
 ```
 

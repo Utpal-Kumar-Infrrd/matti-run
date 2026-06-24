@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=20"
   },
-  "description": "Host server for Matti Run multiplayer race leaderboard",
+  "description": "Socket.io backend for Mattie Run multiplayer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
