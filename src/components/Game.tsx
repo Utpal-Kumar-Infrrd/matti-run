@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import "@/styles/game.css";
 
 const GAME_SCRIPTS_BASE = [
   "/scripts/Box2dWeb.min.js",

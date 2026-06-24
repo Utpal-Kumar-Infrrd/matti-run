@@ -1,12 +1,25 @@
+html.host-route,
+html.host-route body,
+html:has(.host-page),
+html:has(.host-page) body {
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100%;
+  touch-action: manipulation;
+  overscroll-behavior: auto;
+  position: static !important;
+}
+
 .host-page {
   min-height: 100vh;
   height: auto;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
   background: #111;
   color: #fff;
   padding: 16px 20px 48px;
   font-family: system-ui, sans-serif;
+  -webkit-overflow-scrolling: touch;
 }
 
 .host-panel {
@@ -69,6 +82,7 @@
 
 .host-leaderboard-section {
   min-width: 0;
+  overflow: visible;
 }
 
 .host-leaderboard-header {
