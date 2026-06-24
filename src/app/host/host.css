@@ -95,3 +95,17 @@
   word-break: break-all;
   margin: 8px 0;
 }
+
+.host-qr-wrap {
+  display: inline-block;
+  margin: 16px 0;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.host-qr-wrap .host-hint {
+  color: #333;
+  margin-bottom: 8px;
+}

@@ -22,7 +22,8 @@ Deploy the game and multiplayer server together with one [Render Blueprint](http
 
 | Role | URL |
 |------|-----|
-| **Players** | `https://matti-run.onrender.com` |
+| **Players (multiplayer)** | `https://matti-run.onrender.com` |
+| **Single player** | `https://matti-run.onrender.com/single` |
 | **Host** | `https://matti-run.onrender.com/host` |
 | **Health check** | `https://matti-run-multiplayer.onrender.com/health` |
 
@@ -57,22 +58,6 @@ Redeploy the game service after setting the env var.
 
 ---
 
-## Deploy on Vercel (game only)
-
-1. Push to GitHub and import in [Vercel](https://vercel.com)
-2. Deploy — single-player works out of the box
-
-### Multiplayer with Vercel + Render
-
-1. Deploy `server/` on Render (or use the Blueprint above for multiplayer only)
-2. In Vercel → **Environment Variables**:
-   ```
-   NEXT_PUBLIC_MULTIPLAYER_URL=https://your-multiplayer.onrender.com
-   ```
-3. Redeploy Vercel
-
----
-
 ## Local development
 
 ```bash
@@ -80,7 +65,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) for multiplayer, or [http://localhost:3000/single](http://localhost:3000/single) for single player.
 
 For local multiplayer:
 
@@ -100,9 +85,9 @@ NEXT_PUBLIC_MULTIPLAYER_URL=http://localhost:8080
 
 ## Play
 
-- **Single Player** — maze + puzzle on your own
-- **Join Race** — multiplayer (requires multiplayer server)
-- **Host** — `/host` on your deployed game URL
+- **Multiplayer** — `/` — join a race with a room code from the host
+- **Single player** — `/single` — play solo on your own
+- **Host** — `/host` — create a room and share the multiplayer URL with players
 
 ## Tech stack
 

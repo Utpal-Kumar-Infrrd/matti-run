@@ -146,6 +146,41 @@
             text-align: center;
         }
 
+        #exit-hint.exit-hint--success {
+            background-color: rgba(40, 160, 70, 0.95);
+            border-color: #9f9;
+            color: #fff;
+        }
+
+        #exit-marker {
+            position: fixed;
+            display: none;
+            pointer-events: none;
+            z-index: 55;
+            padding: 6px 14px;
+            font-weight: bold;
+            font-size: clamp(12px, 3vw, 16px);
+            color: #fff;
+            background: rgba(40, 160, 70, 0.9);
+            border: 2px solid #9f9;
+            border-radius: 6px;
+            transform-origin: center center;
+            animation: exitPulse 1.2s ease-in-out infinite;
+            box-shadow: 0 0 12px rgba(100, 255, 150, 0.6);
+        }
+
+        @keyframes exitPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: 0.85;
+            }
+        }
+
         .screen-overlay {
             position: fixed;
             inset: 0;

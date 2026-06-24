@@ -3,7 +3,7 @@ import "@/styles/game.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Matti Run",
+  title: "Mattie Run",
   description: "A WebGL maze game — pilot your ship, collect puzzle pieces, and escape.",
 };
 

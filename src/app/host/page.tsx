@@ -3,8 +3,8 @@ import HostDashboard from "@/components/HostDashboard";
 import "./host.css";
 
 export const metadata: Metadata = {
-  title: "Matti Run — Host Dashboard",
-  description: "Host dashboard for Matti Run multiplayer races.",
+  title: "Mattie Run — Host Dashboard",
+  description: "Host dashboard for Mattie Run multiplayer races.",
 };
 
 export default function HostPage() {

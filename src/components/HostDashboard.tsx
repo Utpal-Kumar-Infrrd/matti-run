@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 type Player = { id: string; name: string };
 
@@ -25,7 +26,23 @@ function formatTime(ms: number) {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 }
 
-const multiplayerUrl = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? "";
+const buildTimeMultiplayerUrl = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? "";
+
+async function resolveMultiplayerUrl(): Promise<string> {
+  if (buildTimeMultiplayerUrl) {
+    return buildTimeMultiplayerUrl;
+  }
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) {
+      return "";
+    }
+    const data = (await res.json()) as { multiplayerUrl?: string };
+    return data.multiplayerUrl ?? "";
+  } catch {
+    return "";
+  }
+}
 
 export default function HostDashboard() {
   const socketRef = useRef<ReturnType<typeof import("socket.io-client").io> | null>(null);
@@ -36,22 +53,36 @@ export default function HostDashboard() {
   const [raceStarted, setRaceStarted] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [shareOrigin, setShareOrigin] = useState("");
+  const [multiplayerUrl, setMultiplayerUrl] = useState(buildTimeMultiplayerUrl);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       setShareOrigin(window.location.origin);
     }
 
-    if (!multiplayerUrl) {
-      setStatus({
-        text: "Set NEXT_PUBLIC_MULTIPLAYER_URL to your Socket.io server URL to use the host dashboard.",
-        cls: "error",
-      });
-      return;
-    }
+    let cancelled = false;
 
-    import("socket.io-client").then(({ io }) => {
-      const sock = io(multiplayerUrl);
+    (async () => {
+      const url = await resolveMultiplayerUrl();
+      if (cancelled) {
+        return;
+      }
+      setMultiplayerUrl(url);
+
+      if (!url) {
+        setStatus({
+          text: "Multiplayer server URL not configured. Set MULTIPLAYER_SERVER_URL or NEXT_PUBLIC_MULTIPLAYER_URL.",
+          cls: "error",
+        });
+        return;
+      }
+
+      const { io } = await import("socket.io-client");
+      if (cancelled) {
+        return;
+      }
+
+      const sock = io(url);
       socketRef.current = sock;
 
       sock.on("connect", () => {
@@ -92,9 +123,10 @@ export default function HostDashboard() {
       sock.on("error:message", (data: { message: string }) => {
         setStatus({ text: data.message, cls: "error" });
       });
-    });
+    })();
 
     return () => {
+      cancelled = true;
       socketRef.current?.disconnect();
     };
   }, []);
@@ -112,19 +144,23 @@ export default function HostDashboard() {
 
   return (
     <div className="host-panel">
-      <h1>Matti Run Host Dashboard</h1>
+      <h1>Mattie Run Host Dashboard</h1>
       <p className="host-hint">
         You are the host. Share the player URL and room code — you do not play in the race.
       </p>
       <p className={`host-status ${status.cls}`}>{status.text}</p>
 
-      {multiplayerUrl && (
-        <div>
-          <h2>Player URL</h2>
-          <p className="host-hint">Players open this URL, then choose Join Race.</p>
-          <div className="host-share-url">{shareOrigin || "…"}</div>
-        </div>
-      )}
+      <div>
+        <h2>Player URL</h2>
+        <p className="host-hint">Players open this URL and tap Join Game to enter your room code.</p>
+        <div className="host-share-url">{shareOrigin || "…"}</div>
+        {shareOrigin && (
+          <div className="host-qr-wrap">
+            <p className="host-hint">Scan to join</p>
+            <QRCodeSVG value={shareOrigin} size={180} level="M" includeMargin />
+          </div>
+        )}
+      </div>
 
       {roomReady && (
         <div>
@@ -136,7 +172,9 @@ export default function HostDashboard() {
             {players.length === 0 ? (
               <li>Waiting for players…</li>
             ) : (
-              players.map((p) => <li key={p.id}>{p.name}</li>)
+              players.map((p) => (
+                <li key={p.id}>{p.name}</li>
+              ))
             )}
           </ul>
           <button type="button" onClick={startRace} disabled={raceStarted || players.length === 0}>

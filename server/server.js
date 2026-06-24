@@ -476,7 +476,7 @@ io.on('connection', function (socket) {
 
 server.listen(PORT, function () {
     var lanUrls = getLanGameUrls();
-    console.log('Matti Run multiplayer server on http://localhost:' + PORT);
+    console.log('Mattie Run multiplayer server on http://localhost:' + PORT);
     console.log('Host dashboard:             http://localhost:' + PORT + '/host');
     if (lanUrls.length) {
         console.log('Game (share with players):');

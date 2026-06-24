@@ -12,7 +12,7 @@
             shipLastHeading = 0,
             shipRadius = 0.25,
             keyAxis = [0, 0],
-            planeTexture = THREE.ImageUtils.loadTexture('/concrete.png'),
+            planeTexture = undefined,
             wallTexture = THREE.ImageUtils.loadTexture('/assets/wall.png'),
             gameState = undefined,
             collectibles = [],
@@ -21,6 +21,9 @@
             mazeEndTime = 0,
             mazeComplete = false,
             exitHintTimeout = undefined,
+            exitGateOpen = false,
+            exitWallBody = undefined,
+            exitWallMesh = undefined,
             collectibleHeight = 0.5,
             collectibleRadius = 0.25,
             screenProjector = new THREE.Projector(),
@@ -42,6 +45,30 @@
             lastReportedCollectibles = -1;
 
 
+        function getExitCellX() {
+            return mazeDimension - 1;
+        }
+
+
+        function getExitCellY() {
+            return mazeDimension - 2;
+        }
+
+
+        function isExitCell(i, j) {
+            return i === getExitCellX() && j === getExitCellY();
+        }
+
+
+        function requestGameFullscreen() {
+            var el = document.documentElement;
+            var request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (request) {
+                request.call(el).catch(function () { });
+            }
+        }
+
+
         function getWalkableCells(field) {
             var cells = [];
             for (var i = 0; i < field.dimension; i++) {
@@ -58,7 +85,7 @@
         function buildMazeLayout() {
             var rng = createSeededRng(MAZE_SEED);
             maze = generateSquareMaze(mazeDimension, rng);
-            maze[mazeDimension - 1][mazeDimension - 2] = false;
+            maze[getExitCellX()][getExitCellY()] = true;
             placeCollectibles(rng);
         }
 
@@ -67,7 +94,7 @@
             var cells = getWalkableCells(maze);
             var excluded = {};
             excluded['1,1'] = true;
-            excluded[(mazeDimension - 1) + ',' + (mazeDimension - 2)] = true;
+            excluded[(getExitCellX()) + ',' + (getExitCellY())] = true;
             cells = cells.filter(function (c) {
                 return !excluded[c[0] + ',' + c[1]];
             });
@@ -113,7 +140,7 @@
 
 
         function getCollectiblePixelSize() {
-            return Math.max(12, getShipPixelSize() * COLLECTIBLE_PIXEL_SCALE);
+            return Math.max(8, getShipPixelSize() * COLLECTIBLE_PIXEL_SCALE);
         }
 
 
@@ -161,9 +188,7 @@
 
             var t = Date.now() / 1000;
             var hoverPx = Math.sin(t * 3.2) * 6 + Math.sin(t * 11) * 2;
-            var headingDeg = shipDisplayHeading * 180 / Math.PI;
-            var speed = wBall ? wBall.GetLinearVelocity().Length() : 0;
-            var thrust = Math.min(speed / 1.5, 1);
+            var headingDeg = (shipDisplayHeading + PLAYER_SPRITE_ROTATION_OFFSET) * 180 / Math.PI;
 
             marker.css({
                 left: (screen.x - sizePx / 2) + 'px',
@@ -171,7 +196,7 @@
                 width: sizePx + 'px',
                 height: heightPx + 'px',
                 transform: 'rotate(' + headingDeg + 'deg)'
-            }).toggleClass('ship-thrusting', speed > 0.03).show();
+            }).show();
 
             var shadowScreen = projectWorldToScreen(
                 shipGroup.position.x,
@@ -194,20 +219,55 @@
                 shadow.hide();
             }
 
-            if (speed > 0.03) {
-                var glowW = sizePx * (0.3 + thrust * 0.2);
-                var glowH = glowW * 0.65;
-                glow.css({
-                    left: (screen.x - glowW / 2) + 'px',
-                    top: (screen.y - heightPx / 2 - hoverPx + heightPx * 0.38) + 'px',
-                    width: glowW + 'px',
-                    height: glowH + 'px',
-                    opacity: 0.4 + thrust * 0.5,
-                    transform: 'rotate(' + headingDeg + 'deg) scale(' + (0.9 + thrust * 0.35) + ')'
-                }).show();
-            } else {
-                glow.hide();
+            glow.hide();
+        }
+
+
+        function updateExitMarker() {
+            var marker = $('#exit-marker');
+            if (!exitGateOpen || !camera) {
+                marker.hide();
+                return;
             }
+
+            camera.updateMatrixWorld();
+            var screen = projectWorldToScreen(getExitCellX(), getExitCellY(), 0.5);
+            if (!screen) {
+                marker.hide();
+                return;
+            }
+
+            var w = marker.outerWidth() || 48;
+            var h = marker.outerHeight() || 48;
+            marker.css({
+                left: (screen.x - w / 2) + 'px',
+                top: (screen.y - h / 2) + 'px',
+                display: 'block'
+            });
+        }
+
+
+        function openExitGate() {
+            if (exitGateOpen) {
+                return;
+            }
+            exitGateOpen = true;
+            maze[getExitCellX()][getExitCellY()] = false;
+
+            if (exitWallBody) {
+                wWorld.DestroyBody(exitWallBody);
+                exitWallBody = undefined;
+            }
+            if (exitWallMesh && scene) {
+                scene.remove(exitWallMesh);
+                exitWallMesh = undefined;
+            }
+
+            $('#exit-hint')
+                .text('All pieces collected! Find the exit!')
+                .addClass('exit-hint--success')
+                .show();
+            $('#exit-marker').show();
         }
 
 
@@ -394,6 +454,9 @@
                         lastReportedCollectibles = collectedCount;
                         reportMultiplayerProgress(true);
                     }
+                    if (collectedCount === COLLECTIBLE_COUNT) {
+                        openExitGate();
+                    }
                 }
             }
         }
@@ -497,7 +560,8 @@
                 $('#ship-marker').hide();
                 $('#ship-shadow').hide();
                 $('#ship-engine-glow').hide();
-                $('#exit-hint').hide();
+                $('#exit-hint').hide().removeClass('exit-hint--success');
+                $('#exit-marker').hide();
                 $('#help').show();
                     renderer.domElement.style.display = 'block';
                 collectedCount = 0;
@@ -514,13 +578,14 @@
                 return;
             }
             $('#intro-screen').show();
-            $('#collectible-counter').hide();
+            $('#lobby-screen').hide();
             $('#collectible-markers').hide().empty();
             $('#collect-effects').empty();
             $('#ship-marker').hide();
             $('#ship-shadow').hide();
             $('#ship-engine-glow').hide();
-            $('#exit-hint').hide();
+            $('#exit-hint').hide().removeClass('exit-hint--success');
+            $('#exit-marker').hide();
             $('#help').show();
             renderer.domElement.style.display = 'block';
             collectedCount = 0;
@@ -537,6 +602,12 @@
             if (screen.orientation && screen.orientation.lock) {
                 screen.orientation.lock('landscape').catch(function () { });
             }
+            requestGameFullscreen();
+            exitGateOpen = false;
+            exitWallBody = undefined;
+            exitWallMesh = undefined;
+            $('#exit-hint').hide().removeClass('exit-hint--success');
+            $('#exit-marker').hide();
             $('#collectible-counter').show();
             $('#collectible-markers').show();
             $('#ship-marker').show();
@@ -580,13 +651,22 @@
             bodyDef.type = b2Body.b2_staticBody;
             fixDef.shape = new b2PolygonShape();
             fixDef.shape.SetAsBox(0.5, 0.5);
+            exitWallBody = undefined;
             for (var i = 0; i < maze.dimension; i++) {
                 for (var j = 0; j < maze.dimension; j++) {
-                    if (maze[i][j]) {
+                    if (!maze[i][j]) {
+                        continue;
+                    }
+                    if (isExitCell(i, j) && !exitGateOpen) {
                         bodyDef.position.x = i;
                         bodyDef.position.y = j;
-                        wWorld.CreateBody(bodyDef).CreateFixture(fixDef);
+                        exitWallBody = wWorld.CreateBody(bodyDef);
+                        exitWallBody.CreateFixture(fixDef);
+                        continue;
                     }
+                    bodyDef.position.x = i;
+                    bodyDef.position.y = j;
+                    wWorld.CreateBody(bodyDef).CreateFixture(fixDef);
                 }
             }
         }
@@ -616,16 +696,21 @@
 
         function generate_maze_mesh(field) {
             var dummy = new THREE.Geometry();
+            exitWallMesh = undefined;
             for (var i = 0; i < field.dimension; i++) {
                 for (var j = 0; j < field.dimension; j++) {
-                    if (field[i][j]) {
-                        var geometry = new THREE.CubeGeometry(1, 1, 1, 1, 1, 1);
-                        var mesh_ij = new THREE.Mesh(geometry);
-                        mesh_ij.position.x = i;
-                        mesh_ij.position.y = j;
-                        mesh_ij.position.z = 0.5;
-                        THREE.GeometryUtils.merge(dummy, mesh_ij);
+                    if (!field[i][j]) {
+                        continue;
                     }
+                    if (isExitCell(i, j) && !exitGateOpen) {
+                        continue;
+                    }
+                    var geometry = new THREE.CubeGeometry(1, 1, 1, 1, 1, 1);
+                    var mesh_ij = new THREE.Mesh(geometry);
+                    mesh_ij.position.x = i;
+                    mesh_ij.position.y = j;
+                    mesh_ij.position.z = 0.5;
+                    THREE.GeometryUtils.merge(dummy, mesh_ij);
                 }
             }
             applyMazeWallUVs(dummy, field.dimension);
@@ -633,13 +718,18 @@
             wallTexture.repeat.set(1, 1);
             wallTexture.offset.set(0, 0);
             var material = new THREE.MeshPhongMaterial({ map: wallTexture });
+            if (!exitGateOpen && field[getExitCellX()][getExitCellY()]) {
+                var exitGeo = new THREE.CubeGeometry(1, 1, 1, 1, 1, 1);
+                exitWallMesh = new THREE.Mesh(exitGeo, material);
+                exitWallMesh.position.set(getExitCellX(), getExitCellY(), 0.5);
+            }
             return new THREE.Mesh(dummy, material);
         }
 
 
         function createRenderWorld() {
             scene = new THREE.Scene();
-            scene.add(new THREE.AmbientLight(0x666666));
+            scene.add(new THREE.AmbientLight(0x999999));
 
             light = new THREE.PointLight(0xffffff, 1);
             light.position.set(1, 1, 1.3);
@@ -655,11 +745,28 @@
 
             mazeMesh = generate_maze_mesh(maze);
             scene.add(mazeMesh);
+            if (exitWallMesh) {
+                scene.add(exitWallMesh);
+            }
 
             g = new THREE.PlaneGeometry(mazeDimension * 10, mazeDimension * 10, mazeDimension, mazeDimension);
+            if (!planeTexture || !planeTexture.image || !planeTexture.image.complete) {
+                planeTexture = THREE.ImageUtils.loadTexture('/assets/space.jpg', undefined, function () {
+                    if (planeTexture) {
+                        planeTexture.wrapS = planeTexture.wrapT = THREE.RepeatWrapping;
+                        planeTexture.repeat.set(mazeDimension * 5, mazeDimension * 5);
+                        planeTexture.needsUpdate = true;
+                        if (m && planeMesh) {
+                            m.map = planeTexture;
+                            m.needsUpdate = true;
+                        }
+                    }
+                });
+            }
             planeTexture.wrapS = planeTexture.wrapT = THREE.RepeatWrapping;
             planeTexture.repeat.set(mazeDimension * 5, mazeDimension * 5);
-            m = new THREE.MeshPhongMaterial({ map: planeTexture });
+            planeTexture.needsUpdate = true;
+            m = new THREE.MeshPhongMaterial({ map: planeTexture, side: THREE.DoubleSide });
             planeMesh = new THREE.Mesh(g, m);
             planeMesh.position.set((mazeDimension - 1) / 2, (mazeDimension - 1) / 2, 0);
             planeMesh.rotation.set(Math.PI / 2, 0, 0);
@@ -707,7 +814,7 @@
 
             var vel = wBall.GetLinearVelocity();
             var speed = vel.Length();
-            var heading = speed > 0.04 ? Math.atan2(vel.y, vel.x) - Math.PI / 2 : shipLastHeading;
+            var heading = speed > 0.04 ? Math.atan2(vel.y, -vel.x) - Math.PI / 2 : shipLastHeading;
             var turnDelta = 0;
             if (speed > 0.04) {
                 turnDelta = heading - shipLastHeading;
@@ -753,6 +860,7 @@
                     light.intensity += 0.1 * (1.0 - light.intensity);
                     updateCollectibleMarkers();
                     updateShipMarker();
+                    updateExitMarker();
                     renderer.render(scene, camera);
                     if (Math.abs(light.intensity - 1.0) < 0.05) {
                         light.intensity = 1.0;
@@ -765,6 +873,7 @@
                     updatePhysicsWorld();
                     updateRenderWorld();
                     updateCollectibleMarkers();
+                    updateExitMarker();
                     checkCollectibles();
                     reportMultiplayerProgress(false);
                     renderer.render(scene, camera);
@@ -775,17 +884,11 @@
                     var mazeX = Math.floor(shipGroup.position.x + 0.5);
                     var mazeY = Math.floor(shipGroup.position.y + 0.5);
                     if (mazeX == mazeDimension && mazeY == mazeDimension - 2) {
-                        if (collectedCount === COLLECTIBLE_COUNT) {
+                        if (collectedCount === COLLECTIBLE_COUNT && exitGateOpen) {
                             mazeEndTime = Date.now();
                             mazeComplete = true;
                             reportMultiplayerProgress(true);
                             gameState = 'fade out';
-                        } else {
-                            $('#exit-hint').show();
-                            clearTimeout(exitHintTimeout);
-                            exitHintTimeout = setTimeout(function () {
-                                $('#exit-hint').hide();
-                            }, 2000);
                         }
                     }
                     break;
@@ -807,8 +910,9 @@
                             $('#ship-marker').hide();
                             $('#ship-shadow').hide();
                             $('#ship-engine-glow').hide();
+                            $('#exit-hint').hide().removeClass('exit-hint--success');
+                            $('#exit-marker').hide();
                             $('#help').hide();
-                            $('#exit-hint').hide();
                             var mazeElapsed = mazeEndTime - mazeStartTime;
                             var seed = isMultiplayer ? Multiplayer.getPuzzleSeed() : null;
                             Puzzle.init(function (puzzleElapsed) {
@@ -947,6 +1051,13 @@
             });
             $('#play-again-button').on('click', resetGame);
 
+            var gameMode = (typeof window !== 'undefined' && window.__MATTIE_RUN_GAME_MODE__) || 'multiplayer';
+            if (gameMode === 'single') {
+                $('#join-race-button').hide();
+            } else {
+                $('#start-button').hide();
+            }
+
             $('#collectible-counter').hide();
             $('#collectible-markers').hide();
             $('#ship-marker').hide();
@@ -954,7 +1065,8 @@
             $('#ship-engine-glow').hide();
             $('#puzzle-screen').hide();
             $('#end-screen').hide();
-            $('#exit-hint').hide();
+            $('#exit-hint').hide().removeClass('exit-hint--success');
+            $('#exit-marker').hide();
             Joystick.hide();
 
             gameState = 'intro';

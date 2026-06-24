@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-const GAME_SCRIPTS = [
+const GAME_SCRIPTS_BASE = [
   "/scripts/Box2dWeb.min.js",
   "/scripts/Three.js",
   "/scripts/keyboard.js",
@@ -12,11 +12,33 @@ const GAME_SCRIPTS = [
   "/scripts/game-config.js",
   "/scripts/puzzle.js",
   "/scripts/joystick.js",
-  "/scripts/multiplayer.js",
-  "/scripts/game-main.js",
 ] as const;
 
-const multiplayerUrl = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? "";
+const MULTIPLAYER_SCRIPT = "/scripts/multiplayer.js";
+const GAME_MAIN_SCRIPT = "/scripts/game-main.js";
+
+export type GameMode = "multiplayer" | "single";
+
+const buildTimeMultiplayerUrl = process.env.NEXT_PUBLIC_MULTIPLAYER_URL ?? "";
+
+async function resolveMultiplayerUrl(mode: GameMode): Promise<string> {
+  if (mode === "single") {
+    return "";
+  }
+  if (buildTimeMultiplayerUrl) {
+    return buildTimeMultiplayerUrl;
+  }
+  try {
+    const res = await fetch("/api/config");
+    if (!res.ok) {
+      return "";
+    }
+    const data = (await res.json()) as { multiplayerUrl?: string };
+    return data.multiplayerUrl ?? "";
+  } catch {
+    return "";
+  }
+}
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -34,19 +56,38 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
-export default function Game() {
-  useEffect(() => {
-    window.__MATTI_RUN_MULTIPLAYER_URL__ = multiplayerUrl;
+type GameProps = {
+  mode: GameMode;
+};
 
+export default function Game({ mode }: GameProps) {
+  useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      for (const src of GAME_SCRIPTS) {
+      window.__MATTIE_RUN_GAME_MODE__ = mode;
+      const url = await resolveMultiplayerUrl(mode);
+      if (cancelled) {
+        return;
+      }
+      window.__MATTI_RUN_MULTIPLAYER_URL__ = url;
+
+      for (const src of GAME_SCRIPTS_BASE) {
         if (cancelled) {
           return;
         }
         await loadScript(src);
       }
+      if (mode === "multiplayer") {
+        if (cancelled) {
+          return;
+        }
+        await loadScript(MULTIPLAYER_SCRIPT);
+      }
+      if (cancelled) {
+        return;
+      }
+      await loadScript(GAME_MAIN_SCRIPT);
     })().catch((err) => {
       console.error("Failed to load game scripts:", err);
     });
@@ -54,30 +95,50 @@ export default function Game() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mode]);
 
   return (
     <>
       <div id="intro-screen" className="screen-overlay">
         <div className="screen-panel">
-          <h1>Matti Run</h1>
-          <p>
-            Pilot your ship through the maze and collect all 12 image pieces.
-            You can only exit once every piece is collected.
-          </p>
-          <p>
-            Best played in landscape orientation.
-            <br />
-            Use arrow keys or the on-screen joystick to move.
-            <br />
-            Vim trainees: h, j, k, l
-          </p>
-          <button id="start-button" className="game-button" type="button">
-            Single Player
-          </button>
-          <button id="join-race-button" className="game-button secondary" type="button">
-            Join Race
-          </button>
+          <h1>Mattie Run</h1>
+          {mode === "multiplayer" ? (
+            <>
+              <p>
+                Join a multiplayer race. Collect all 12 image pieces in the maze, then solve the
+                puzzle. The exit opens once every piece is collected.
+              </p>
+              <p>
+                Get the room code from your host, then join below.
+                <br />
+                Best played in landscape orientation.
+              </p>
+              <button id="join-race-button" className="game-button" type="button">
+                Join Game
+              </button>
+              <button id="start-button" className="game-button" type="button" style={{ display: "none" }}>
+                Start Game
+              </button>
+            </>
+          ) : (
+            <>
+              <p>
+                Pilot your character through the maze and collect all 12 image pieces. The exit opens
+                once every piece is collected.
+              </p>
+              <p>
+                Best played in landscape orientation.
+                <br />
+                Use arrow keys or the on-screen joystick to move.
+              </p>
+              <button id="start-button" className="game-button" type="button">
+                Start Game
+              </button>
+              <button id="join-race-button" className="game-button secondary" type="button" style={{ display: "none" }}>
+                Join Game
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -132,7 +193,7 @@ export default function Game() {
         <div className="screen-panel end-panel">
           <h1>Complete!</h1>
           <div className="end-content">
-            <img id="end-full-image" src="" alt="Completed puzzle image" />
+            <img id="end-full-image" alt="Completed puzzle image" />
             <div className="end-stats">
               <div className="time-row">
                 Maze time: <span id="maze-time">0:00</span>
@@ -160,16 +221,16 @@ export default function Game() {
       </div>
 
       <div id="instructions">
-        How to play Matti Run:
+        How to play Mattie Run:
         <br />
         <br />
-        Collect all 12 image pieces in the maze, then reach the exit.
+        Collect all 12 image pieces in the maze. The exit opens when you have them all.
         <br />
         <br />
         Solve the puzzle by clicking two tiles to swap them.
         <br />
         <br />
-        Use arrow keys or the joystick to move the ship.
+        Use arrow keys or the joystick to move.
         <br />
         <br />
         Vim trainees: h, j, k, l
@@ -180,11 +241,14 @@ export default function Game() {
       <div id="collectible-markers" />
       <div id="ship-shadow" />
       <div id="ship-engine-glow" />
-      <img id="ship-marker" src="/assets/ship.png" alt="" />
+      <img id="ship-marker" src="/assets/player.png" alt="" />
       <div id="collect-effects" />
 
       <div id="collectible-counter">Collected: 0/12</div>
-      <div id="exit-hint">Collect all pieces first!</div>
+      <div id="exit-hint" style={{ display: "none" }}>
+        Collect all pieces first!
+      </div>
+      <div id="exit-marker">EXIT</div>
 
       <div id="joystick">
         <div id="joystick-base">
