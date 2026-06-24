@@ -225,6 +225,10 @@ function getPlayerBySocket(socketId) {
     return found;
 }
 
+function isSocketConnected(socketId) {
+    return Boolean(socketId && io.sockets.sockets.has(socketId));
+}
+
 function getLanAddresses() {
     var nets = os.networkInterfaces();
     var addresses = [];
@@ -284,8 +288,10 @@ io.on('connection', function (socket) {
 
     socket.on('room:create', function () {
         if (room && room.hostSocketId && room.hostSocketId !== socket.id) {
-            socket.emit('error:message', { message: 'A room already exists on this server.' });
-            return;
+            if (isSocketConnected(room.hostSocketId)) {
+                socket.emit('error:message', { message: 'A room already exists on this server.' });
+                return;
+            }
         }
 
         if (!room) {

@@ -1,0 +1,34 @@
+# Render Blueprint — deploy game + multiplayer together.
+# https://render.com/docs/blueprint-spec
+#
+# Setup: Render Dashboard → New → Blueprint → connect this repo → select branch deploy/render
+
+services:
+  # Socket.io multiplayer backend (deploy first; game links to this URL)
+  - type: web
+    name: matti-run-multiplayer
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+
+  # Next.js game + host dashboard
+  - type: web
+    name: matti-run
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NEXT_PUBLIC_MULTIPLAYER_URL
+        fromService:
+          type: web
+          name: matti-run-multiplayer
+          envVarKey: RENDER_EXTERNAL_URL

@@ -59,6 +59,11 @@ export default function HostDashboard() {
         sock.emit("room:create");
       });
 
+      sock.io.on("reconnect", () => {
+        setStatus({ text: "Reconnected. Reclaiming room…", cls: "connected" });
+        sock.emit("room:create");
+      });
+
       sock.on("disconnect", () => {
         setStatus({ text: "Disconnected from server.", cls: "error" });
       });

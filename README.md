@@ -2,32 +2,76 @@
 
 A WebGL maze game built with Next.js, Three.js, and Box2dWeb. Pilot your ship through the maze, collect puzzle pieces, and solve the sliding puzzle to win.
 
-## Deploy on Vercel
+## Deploy everything on Render (recommended)
 
-1. Push this repository to GitHub
-2. Import the project in [Vercel](https://vercel.com)
-3. Deploy — no build configuration needed
+Deploy the game and multiplayer server together with one [Render Blueprint](https://render.com/docs/blueprint-spec).
 
-Single-player works out of the box on Vercel.
+### One-click setup
 
-### Multiplayer (optional)
+1. Push the `deploy/render` branch to GitHub
+2. Open [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connect repo `Utpal-Kumar-Infrrd/matti-run` and select branch **`deploy/render`**
+4. Click **Apply** — Render creates two services:
+   - **`matti-run`** — Next.js game + host dashboard
+   - **`matti-run-multiplayer`** — Socket.io backend
+5. Wait for both deploys to finish (first build ~5–10 min)
 
-Vercel does not host persistent WebSocket servers. For multiplayer races:
+`NEXT_PUBLIC_MULTIPLAYER_URL` is wired automatically from the multiplayer service URL.
 
-1. Deploy the Socket.io server in `server/` to a host that supports long-running processes (Railway, Fly.io, Render, etc.)
-2. In Vercel project settings, set:
+### URLs after deploy
+
+| Role | URL |
+|------|-----|
+| **Players** | `https://matti-run.onrender.com` |
+| **Host** | `https://matti-run.onrender.com/host` |
+| **Health check** | `https://matti-run-multiplayer.onrender.com/health` |
+
+Service names may differ slightly if Render suffixes them; check your dashboard.
+
+### Free tier notes
+
+- Services spin down after ~15 min idle; first visit can take 30–60s to wake up
+- Open `/health` on the multiplayer service before hosting a race
+- Avoid refreshing the host page mid-session (or wait for reconnect — server allows host takeover when the old connection is gone)
+
+### Manual setup (without Blueprint)
+
+**Service 1 — multiplayer** (`server/`):
+
+| Setting | Value |
+|---------|--------|
+| Root Directory | `server` |
+| Build | `npm install` |
+| Start | `npm start` |
+| Health Check | `/health` |
+
+**Service 2 — game** (repo root):
+
+| Setting | Value |
+|---------|--------|
+| Build | `npm install && npm run build` |
+| Start | `npm start` |
+| Env | `NEXT_PUBLIC_MULTIPLAYER_URL=https://YOUR-MULTIPLAYER.onrender.com` |
+
+Redeploy the game service after setting the env var.
+
+---
+
+## Deploy on Vercel (game only)
+
+1. Push to GitHub and import in [Vercel](https://vercel.com)
+2. Deploy — single-player works out of the box
+
+### Multiplayer with Vercel + Render
+
+1. Deploy `server/` on Render (or use the Blueprint above for multiplayer only)
+2. In Vercel → **Environment Variables**:
    ```
-   NEXT_PUBLIC_MULTIPLAYER_URL=https://your-socket-server.example.com
+   NEXT_PUBLIC_MULTIPLAYER_URL=https://your-multiplayer.onrender.com
    ```
-3. Players use the main site URL; hosts open `/host` to manage rooms
+3. Redeploy Vercel
 
-Local multiplayer server:
-
-```bash
-cd server && npm install && npm start
-```
-
-Then set `NEXT_PUBLIC_MULTIPLAYER_URL=http://localhost:8080` in `.env.local` and run `npm run dev`.
+---
 
 ## Local development
 
@@ -38,11 +82,27 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+For local multiplayer:
+
+```bash
+# terminal 1
+npm run dev
+
+# terminal 2
+cd server && npm install && npm start
+```
+
+Create `.env.local`:
+
+```
+NEXT_PUBLIC_MULTIPLAYER_URL=http://localhost:8080
+```
+
 ## Play
 
 - **Single Player** — maze + puzzle on your own
-- **Join Race** — multiplayer (requires `NEXT_PUBLIC_MULTIPLAYER_URL`)
-- **Host** — [http://localhost:3000/host](http://localhost:3000/host)
+- **Join Race** — multiplayer (requires multiplayer server)
+- **Host** — `/host` on your deployed game URL
 
 ## Tech stack
 
